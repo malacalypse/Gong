@@ -17,7 +17,6 @@ public enum MIDINotice {
     case throughConnectionsChanged    
     case serialPortOwnerChanged    
     case ioError(device: MIDIDevice, error: MIDIError)
-    case unknown
 }
 
 extension MIDINotice {
@@ -60,7 +59,7 @@ extension MIDINotice {
                 return .ioError(device: device, error: error)
             }
         @unknown default:
-            self = .unknown
+            fatalError("Unrecognized notification message ID")
         }
     }
 

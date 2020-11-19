@@ -12,54 +12,6 @@
 import Foundation
 import CoreMIDI
 
-public enum MIDIMessage {
-
-    case noteOff(channel: UInt8, key: UInt8, velocity: UInt8)
-    case noteOn(channel: UInt8, key: UInt8, velocity: UInt8)
-    case polyphonicKeyPressure(channel: UInt8, key: UInt8, pressure: UInt8)
-    case controlChange(channel: UInt8, controller: UInt8, value: UInt8)
-
-    public enum ChannelModeType {
-        case allSoundOff
-        case resetAllControllers
-        case localControlOff
-        case localControlOn
-        case allNotesOff
-        case omniModeOff
-        case omniModeOn
-        case monoModeOn(channels: UInt8)
-        case polyModeOn
-    }
-
-    case channelMode(channel: UInt8, type: ChannelModeType)
-    case programChange(channel: UInt8, number: UInt8)
-    case channelPressure(channel: UInt8, pressure: UInt8)
-    case pitchBendChange(channel: UInt8, value: UInt16)
-
-    public enum SystemCommonType {
-        case systemExclusive(bytes: [UInt8])
-        case midiTimeCodeQuarterFrame(type: UInt8, values: UInt8)
-        case songPositionPointer(value: UInt16)
-        case songSelect(song: UInt8)
-        case tuneRequest
-    }
-
-    case systemCommon(type: SystemCommonType)
-
-    public enum SystemRealTimeType {
-        case timingClock
-        case start
-        case `continue`
-        case stop
-        case activeSensing
-        case reset
-    }
-
-    case systemRealTime(type: SystemRealTimeType)
-    case unknown
-
-}
-
 extension MIDIPacket {
     
     public init(delay: TimeInterval = 0.0) {
@@ -144,14 +96,18 @@ extension MIDIPacket {
         self.length = UInt16(bytes.count)
         self.bytes = bytes
     }
+    
 }
 
 extension MIDIPacket {
     
     public var bytes: [UInt8] {
         get {
-            let bytes = Mirror(reflecting: data).children.compactMap { $0.value as? UInt8 }
-            return Array(bytes[0..<Int(length)])
+            let bytes = Mirror(reflecting: data).children.compactMap { child in
+                return child.value as? UInt8
+            }
+            
+            return bytes.unpad(with: 0)
         }
         set {
             let bytes = newValue.pad(with: 0, to: 256)
@@ -162,8 +118,56 @@ extension MIDIPacket {
 }
 
 extension MIDIPacket {
+
+    public enum Message {
+
+        case noteOff(channel: UInt8, key: UInt8, velocity: UInt8)
+        case noteOn(channel: UInt8, key: UInt8, velocity: UInt8)
+        case polyphonicKeyPressure(channel: UInt8, key: UInt8, pressure: UInt8)
+        case controlChange(channel: UInt8, controller: UInt8, value: UInt8)
+
+        public enum ChannelModeType {
+            case allSoundOff
+            case resetAllControllers
+            case localControlOff
+            case localControlOn
+            case allNotesOff
+            case omniModeOff
+            case omniModeOn
+            case monoModeOn(channels: UInt8)
+            case polyModeOn
+        }
+
+        case channelMode(channel: UInt8, type: ChannelModeType)
+        case programChange(channel: UInt8, number: UInt8)
+        case channelPressure(channel: UInt8, pressure: UInt8)
+        case pitchBendChange(channel: UInt8, value: UInt16)
+
+        public enum SystemCommonType {
+            case systemExclusive(bytes: [UInt8])
+            case midiTimeCodeQuarterFrame(type: UInt8, values: UInt8)
+            case songPositionPointer(value: UInt16)
+            case songSelect(song: UInt8)
+            case tuneRequest
+        }
+
+        case systemCommon(type: SystemCommonType)
+
+        public enum SystemRealTimeType {
+            case timingClock
+            case start
+            case `continue`            
+            case stop            
+            case activeSensing            
+            case reset            
+        }
+        
+        case systemRealTime(type: SystemRealTimeType)
+        case unknown
+        
+    }
     
-    public init(_ message: MIDIMessage, delay: TimeInterval = 0.0) {
+    public init(_ message: Message, delay: TimeInterval = 0.0) {
         switch message {
         case .noteOff(let channel, let key, let velocity):
             self.init(status: 8, channel: channel, data1: key, data2: velocity, delay: delay)
@@ -237,7 +241,7 @@ extension MIDIPacket {
 
 extension MIDIPacket {
     
-    public var message: MIDIMessage {
+    public var message: Message {
         switch status {
         case 8:
             return .noteOff(channel: channel, key: data1, velocity: data2)

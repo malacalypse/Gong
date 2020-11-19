@@ -30,7 +30,7 @@ public class MIDIObject {
         case .destination, .externalDestination:
             return MIDIDestination(reference)
         @unknown default:
-            return MIDIObject(reference)
+            fatalError("Unrecognized MIDI object type")
         }
     }
     
